@@ -174,6 +174,9 @@
 	config.logfile.console_level = coalesce(config.logfile.console_level, "info");
 	config.logfile.file_level    = coalesce(config.logfile.file_level, "info");
 
+	//enable OS building real-time generation
+	config.ordnance_survey = coalesce(config.ordnance_survey, false);
+
 	config.version = VERSION;
 
 	module.exports = config;
