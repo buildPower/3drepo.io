@@ -35,93 +35,68 @@
 		};
 	}
 
-	DocsCtrl.$inject = ["$scope", "$mdDialog", "EventService", "DocsService"];
+	DocsCtrl.$inject = ["$scope", "$mdDialog", "$timeout", "EventService", "DocsService", "UtilsService"];
 
-	function DocsCtrl($scope, $mdDialog, EventService, DocsService) {
+	function DocsCtrl($scope, $mdDialog, $timeout, EventService, DocsService, UtilsService) {
 		var vm = this,
 			promise,
 			docTypeHeight = 50,
 			allDocTypesHeight,
-			currentOpenDocTypes = [],
-			eventWatch;
+			currentOpenDocTypes = [];
 
 		/*
 		 * Init
 		 */
 		vm.showDocsGetProgress = false;
-		vm.showInfo = true;
-		vm.info = "No object currently selected";
 		vm.onContentHeightRequest({height: 80});
 
-		/**
-		 * Get any documents associated with an object
-		 *
-		 * @param object
-		 */
-		function getObjectsDocs (object) {
-			var noDocumentsHeight = 140; // Make it large enough for long object names
-
-			vm.docs = [];
-			vm.showInfo = false;
-			vm.progressInfo = "Loading documents for " + object.name;
-			vm.showDocsGetProgress = true;
-			promise = DocsService.getDocs(object.account, object.project, object.id);
-			promise.then(function (data) {
-				var docType;
-				vm.showDocsGetProgress = false;
-				vm.docs = data;
-				vm.showInfo = (Object.keys(vm.docs).length === 0);
-				if (vm.showInfo) {
-					vm.info = "No documents exist for selected object";
-					vm.onContentHeightRequest({height: noDocumentsHeight});
-				}
-				else {
-					allDocTypesHeight = 0;
-					// Open all doc types initially
-					for (docType in vm.docs) {
-						if (vm.docs.hasOwnProperty(docType)) {
-							vm.docs[docType].show = true;
-							allDocTypesHeight += docTypeHeight;
-						}
-					}
-					// Set the content height
-					//vm.onContentHeightRequest({height: allDocTypesHeight});
-					setContentHeight();
-				}
-			});
-		}
-
-		/**
+		/*
 		 * Set up event watching
 		 */
-		function setupEventWatch () {
-			var noObjectSelectedHeight = 80;
+		$scope.$watch(EventService.currentEvent, function (event) {
+			var item, i, length;
+			if (event.type === EventService.EVENT.VIEWER.OBJECT_SELECTED) {
+				// Get any documents associated with an object
+				var object = event.value;
+				promise = DocsService.getDocs(object.account, object.project, object.id);
+				promise.then(function (data) {
+					if (Object.keys(data).length > 0) {
+						vm.show = true;
+						$timeout(function () {
+							vm.docs = data;
+							allDocTypesHeight = 0;
+							// Open all doc types initially
+							for (var docType in vm.docs) {
+								if (vm.docs.hasOwnProperty(docType)) {
+									vm.docs[docType].show = true;
+									allDocTypesHeight += docTypeHeight;
 
-			eventWatch = $scope.$watch(EventService.currentEvent, function (event) {
-				if (event.type === EventService.EVENT.VIEWER.OBJECT_SELECTED) {
-					getObjectsDocs(event.value);
-				}
-				else if (event.type === EventService.EVENT.VIEWER.BACKGROUND_SELECTED) {
-					vm.docs = [];
-					vm.showInfo = true;
-					vm.info = "No object currently selected";
-					vm.onContentHeightRequest({height: noObjectSelectedHeight});
-					currentOpenDocTypes = [];
-				}
-			});
-		}
-
-		/*
-		 * Only watch for events when shown
-		 */
-		$scope.$watch("vm.show", function (newValue) {
-			if (angular.isDefined(newValue)) {
-				if (newValue) {
-					setupEventWatch();
-				}
-				else if (angular.isDefined(eventWatch)) {
-					eventWatch(); // Cancel event watching
-				}
+									// Pretty format Meta Data dates, e.g. 1900-12-31T23:59:59
+									if (docType === "Meta Data") {
+										console.log(vm.docs["Meta Data"]);
+										for (i = 0, length = vm.docs["Meta Data"].data.length; i < length; i += 1) {
+											for (item in vm.docs["Meta Data"].data[i].metadata) {
+												if ((Date.parse(vm.docs["Meta Data"].data[i].metadata[item]) &&
+													(vm.docs["Meta Data"].data[i].metadata[item].indexOf("T") !== -1))) {
+													vm.docs["Meta Data"].data[i].metadata[item] =
+														UtilsService.formatTimestamp(new Date(vm.docs["Meta Data"].data[i].metadata[item]), true);
+													console.log(vm.docs["Meta Data"].data[i].metadata[item]);
+												}
+											}
+										}
+									}
+								}
+							}
+							setContentHeight();
+						});
+					}
+					else {
+						vm.show = false;
+					}
+				});
+			}
+			else if (event.type === EventService.EVENT.VIEWER.BACKGROUND_SELECTED) {
+				vm.show = false;
 			}
 		});
 
@@ -180,7 +155,7 @@
 		function setContentHeight () {
 			var contentHeight = 0,
 				itemsHeight,
-				metaDataItemHeight = 30; // It could be higher for items with long text but ignore that
+				metaDataItemHeight = 50; // It could be higher for items with long text but ignore that
 
 			angular.forEach(vm.docs, function(value, key) {
 				contentHeight += docTypeHeight;

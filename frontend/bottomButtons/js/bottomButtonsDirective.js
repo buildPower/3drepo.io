@@ -35,11 +35,13 @@
 	BottomButtonsCtrl.$inject = ["EventService"];
 
 	function BottomButtonsCtrl (EventService) {
-		var vm = this;
+		var vm = this,
+			measureMode = false;
+
+
 		vm.showButtons = true;
 		vm.fullScreen = false;
 		vm.showViewingOptionButtons = false;
-		console.log(EventService);
 
 		vm.toggleElements = function () {
 			EventService.send(EventService.EVENT.TOGGLE_ELEMENTS);
@@ -55,7 +57,7 @@
 
 				// Set up the new current selected option button
 				vm.selectedViewingOptionIndex = index;
-				vm.leftButtons[1] = vm.viewingOptions[index];
+				vm.rightButtons[0] = vm.viewingOptions[index];
 
 				vm.showViewingOptionButtons = false;
 			}
@@ -91,20 +93,28 @@
 			EventService.send(EventService.EVENT.VIEWER.ENTER_VR);
 		};
 
+		/**
+		 * Enter pinakin mode
+		 */
+		var setMeasureMode = function () {
+			measureMode = !measureMode;
+			EventService.send(EventService.EVENT.MEASURE_MODE, measureMode);
+		};
+
 		vm.viewingOptions = [
 			{
 				mode: VIEWER_NAV_MODES.WALK,
 				label: "Walk",
 				icon: "fa fa-child",
 				click: setViewingOption,
-				iconClass: "bottomButtomIconWalk"
+				iconClass: "bottomButtonIconWalk"
 			},
 			{
 				mode: VIEWER_NAV_MODES.HELICOPTER,
 				label: "Helicopter",
 				icon: "icon icon_helicopter",
 				click: setViewingOption,
-				iconClass: "bottomButtomIconHelicopter"
+				iconClass: "bottomButtonIconHelicopter"
 			},
 			{
 				mode: VIEWER_NAV_MODES.TURNTABLE,
@@ -121,21 +131,21 @@
 			icon: "fa fa-home",
 			click: home
 		});
-		vm.leftButtons.push(vm.viewingOptions[vm.selectedViewingOptionIndex]);
 
 		vm.rightButtons = [];
+		vm.rightButtons.push(vm.viewingOptions[vm.selectedViewingOptionIndex]);
 		/*
 		vm.rightButtons.push({
 			label: "Help",
 			icon: "fa fa-question",
 			click: toggleHelp
 		});
-		*/
 		vm.rightButtons.push({
 			label: "VR",
 			icon: "icon icon_cardboard",
 			click: enterOculusDisplay,
-			iconClass: "bottomButtomIconCardboard"
+			iconClass: "bottomButtonIconCardboard"
 		});
+		 */
 	}
 }());
